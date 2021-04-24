@@ -1,8 +1,8 @@
 from django.shortcuts import render
-from django.views.generic import DetailView, View
+from django.views.generic import ListView
 from monitor.models import TempVolModel
 # Create your views here.
 
-#class IndexView(DetailView):
-#	model = TempVolModel
-class IndexView(View):
+class IndexView(ListView):
+	template_name = "monitor/index.html"
+	model = TempVolModel
