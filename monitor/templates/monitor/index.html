@@ -1,11 +1,24 @@
 {% if object_list %}
-    <ul>
+    <table>
+    	<tr>
+    		<th>Установка</th>
+    		<th>Дата</th>
+    		<th>Темп Приток</th>
+    		<th>Расход Приток</th>
+    		<th>Темп Вытяжка</th>
+    		<th>Расход Вытяжка</th>
+    	</tr>
     {% for object in object_list %}
-        <li>{{ object.temp_intake }}</li>
+    	<tr>
+    		<th>{{ object.get_name }}</th>
+    		<th>{{ object.get_datetime }}</th>
+    		<th>{{ object.temp_intake }}</th>
+    		<th>{{ object.vol_intake }}</th>
+    		<th>{{ object.temp_exhaust }}</th>
+    		<th>{{ object.vol_exhaust }}</th>
+    	</tr>
     {% endfor %}
-    </ul>
+    </table>
 {% else %}
-    <p>No polls are available.</p>
+	<span>Hello world!</span>
 {% endif %}
-
-<span>Hello world!</span>

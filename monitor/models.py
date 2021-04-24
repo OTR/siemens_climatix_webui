@@ -39,7 +39,14 @@ class TempVolModel(models.Model):
 
 	datetime = models.DateTimeField(default=get_start_epoch())
 
+	def get_name(self):
+		"""return readable name of Unit"""
+		return f"{self.CVU_NAME(self.CVU_name).label}"
+
+	def get_datetime(self):
+		"""return readable datetime when smaple was taken"""
+		return f"{self.datetime.strftime('%d.%m.%Y %H:%M')}"
 
 	def __str__(self):
 		"""Return ЦВУ 1.1 2004.06.03 23:50"""
-		return f"{self.CVU_NAME(self.CVU_name).label} {self.datetime.strftime('%d.%m.%Y %H:%M')}"
+		return self.get_name + " " + self.get_datetime
