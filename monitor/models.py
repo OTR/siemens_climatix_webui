@@ -49,4 +49,4 @@ class TempVolModel(models.Model):
 
 	def __str__(self):
 		"""Return ЦВУ 1.1 2004.06.03 23:50"""
-		return self.get_name + " " + self.get_datetime
+		return self.get_name() + " " + self.get_datetime()
