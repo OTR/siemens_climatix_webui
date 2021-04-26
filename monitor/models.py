@@ -5,12 +5,16 @@ from django.utils.translation import gettext_lazy as gtl
 # Create your models here.
 def get_start_epoch():
 	"""return 01.01.1970 date"""
+	# FIXME: RuntimeWarning: DateTimeField TempVolModel.datetime
+	#  received a naive datetime (2021-04-26 16:32:54.836014)
+	#  while time zone support is active.
+	#   RuntimeWarning)
 	return datetime.fromtimestamp(0.0)
 
 class TempVolModel(models.Model):
 	""""""
 	class CVU_NAME(models.TextChoices):
-		"""'F' stands for 16 as number in hexademical representation"""
+		"""'F' stands for 16 as number in hexadecimal representation"""
 		CVU_1_1 = "0", gtl("ЦВУ 1.1")
 		CVU_1_2 = "1", gtl("ЦВУ 1.2")
 		CVU_1_3 = "2", gtl("ЦВУ 1.3")
@@ -27,6 +31,9 @@ class TempVolModel(models.Model):
 		CVU_4_2 = "D", gtl("ЦВУ 4.2")
 		CVU_4_3 = "E", gtl("ЦВУ 4.3")
 		CVU_4_4 = "F", gtl("ЦВУ 4.4")
+
+	# FIXME: make CVU_name and datetime fields not NULL
+	# FIXME: CVU_name and datetime unique together
 
 	CVU_name = models.CharField(max_length=1, choices=CVU_NAME.choices,
 								default=CVU_NAME.CVU_1_1)
