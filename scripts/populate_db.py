@@ -30,10 +30,6 @@ application = get_wsgi_application()
 from monitor.models import TempVolModel
 
 try:
-    # FIXME: RuntimeWarning: DateTimeField TempVolModel.datetime
-    #  received a naive datetime (2021-04-26 16:32:54.836014)
-    #  while time zone support is active.
-    #  RuntimeWarning)
     names = TempVolModel.CVU_NAME.values
     for name in names:
         rand_vol_intake = randint(17000, 41000)
