@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <meta http-equiv="Content-Language" content="en-us" />
+        <meta http-equiv="pragma" content="no-cache" />
+        <title>?title</title>
+        <script type="text/javascript" src="./HMILang1.js"></script>
+        <script type="text/javascript" src="./HMILang2.js"></script>
+        <script type="text/javascript" src="./HMILang3.js"></script>
+        <script type="text/javascript" src="./HMILang4.js"></script>
+        <script type="text/javascript" src="./HMILang.js"></script>
+        <script type="text/javascript" src="./HMI.js"></script>
+        <script type="text/javascript">
+            window.isHmiRoot = true;
+
+            function LoadScript(url, cb) {
+                var head = document.getElementsByTagName('head')[0];
+                var script = document.createElement('script');
+                script.type = 'text/javascript';
+
+                if (cb != null) {
+                    script.onreadystatechange = function() {
+                        if (this.readyState == 'complete')
+                            cb();
+                    };
+                    script.onload = cb;
+                }
+
+                script.src = url;
+                head.appendChild(script);
+            }
+
+            function isCanvasSupported() {
+                var elem = document.createElement('canvas');
+                return !!(elem.getContext && elem.getContext('2d'));
+            }
+
+            function EnableTrend() {
+                // show trend stuff
+                var el = document.getElementById("hidetrendviewer");
+                el.style.display = "block";
+            }
+
+            function LoadTrend() {
+                LoadScript("./onlinetrend.js", EnableTrend);
+            }
+
+            function LoadDygraph() {
+                if (isCanvasSupported())
+                    LoadScript("./dygraph-combined.js", LoadTrend);
+            }
+
+            function BusyDisable() {
+                var el = document.getElementById("busy");
+                el.style.display = "none";
+            }
+
+            function BusyEnable() {
+                var el = document.getElementById("busy");
+                el.style.display = "";
+            }
+            
+            var languages = null;
+        
+            function BuildLanguages() {
+                if (!languages) {
+                    languages = {};
+                    for (var an1 in languages1) languages[an1] = languages1[an1];
+                    for (var an2 in languages2) languages[an2] = languages2[an2];
+                    for (var an3 in languages3) languages[an3] = languages3[an3];
+                    for (var an4 in languages4) languages[an4] = languages4[an4];
+                }
+            }
+
+            function DoOnLoad() {
+                BuildLanguages();
+                SAS();
+                SLS();
+                JTP("./HMI00001.cgi");      // load first page
+                LoadDygraph();
+            }
+        </script>
+        <link rel="stylesheet" href="./HMI.css" />
+        <style type="text/css">
+            #busy{
+                position: fixed; top: 250px; left: 300px; width: 150px; height: 150px;
+                -webkit-transform:scale(0.6);
+                transform:scale(0.6);
+            }
+
+            .busy{
+                position:absolute;
+                background-color:#FFFFFF;
+                height:25px; width:25px;
+                -webkit-border-radius:13px;
+                -webkit-animation-name:busy;
+                -webkit-animation-duration:1s;
+                -webkit-animation-iteration-count:infinite;
+                -webkit-animation-direction:linear;
+                border-radius:13px;
+                animation-name:busy;
+                animation-duration:1s;
+                animation-iteration-count:infinite;
+                animation-direction:linear;
+            }
+
+            @-webkit-keyframes busy { 0%{ background-color:rgba(44,92,155,1)} 100%{ background-color:rgba(44,92,155,0)} }
+            @keyframes busy{ 0%{ background-color:rgba(44,92,155,1)} 100%{ background-color:rgba(44,92,155,0)} }
+
+            #bsy1{ left:0; top:61px; -webkit-animation-delay:0.36s; animation-delay:0.36s; }
+            #bsy2{ left:18px; top:18px; -webkit-animation-delay:0.48s; animation-delay:0.48s; }
+            #bsy3{ left:61px; top:0; -webkit-animation-delay:0.6s; animation-delay:0.6s; }
+            #bsy4{ right:18px; top:18px; -webkit-animation-delay:0.72s; animation-delay:0.72s; }
+            #bsy5{ right:0; top:61px; -webkit-animation-delay:0.84s; animation-delay:0.84s; }
+            #bsy6{ right:18px; bottom:18px; -webkit-animation-delay:0.96s; animation-delay:0.96s; }
+            #bsy7{ left:61px; bottom:0; -webkit-animation-delay:1.08s; animation-delay:1.08s; }
+            #bsy8{ left:18px; bottom:18px; -webkit-animation-delay:1.2s; animation-delay:1.2s; }
+
+            a {
+                text-decoration:none;
+            }
+            body {
+                margin-top:0px;
+                margin-right:0px;
+                margin-bottom:0px;
+                padding:0;
+                background:#FFF;
+            }
+            .headerhorizontalline {
+                height:1px;
+                background:#FFFFFF;
+            }
+            .headernavigationbar {
+                height:20px;
+                background:#999999;
+            }
+            .hmibuttontext {
+                width:40px;
+                height:20px;
+                display:block;
+                font-size: 16px;
+                font-weight: bold;
+                color:#000;
+                margin:0;
+                padding:0;
+                padding-left:5px;
+                padding-top:0;
+                text-align:center;
+            }
+            .hmibuttontextalarm {
+                width:20px;
+                height:20px;
+                margin-left:5px;
+                display:block;
+                background-image:url('./alarm.png');
+                background-repeat:no-repeat;
+            }
+            .hmibuttonnormal {
+                width:20px;
+                height:20px;
+                display:block;
+                background-image:url('./ln.png');
+                background-repeat:no-repeat;
+                cursor:auto;
+            }
+            .hmibuttonnormal:hover {
+                width:20px;
+                height:20px;
+                display:block;
+                background-image:url('./ln.png');
+                background-repeat:no-repeat;
+                cursor:pointer;
+            }
+            .hmibuttonalarmactive {
+                width:20px;
+                height:20px;
+                display:block;
+                padding:0;
+                margin:0;
+                background-image:url('./lrb.gif');
+                background-repeat:no-repeat;
+                cursor:auto;
+            }
+            .hmibuttonalarmactive:hover {
+                cursor:pointer;
+            }
+            .hmibuttonalarmnotcritical {
+                width:20px;
+                height:20px;
+                display:block;
+                background-image:url('./lr.png');
+                background-repeat:no-repeat;
+                cursor:auto;
+            }
+            .hmibuttonalarmnotcritical:hover {
+                cursor:pointer;
+            }
+            .hmibuttonredon {
+                width:20px;
+                height:20px;
+                display:block;
+                padding:0;
+                margin:0;
+                background-image:url('./lr.png');
+                background-repeat:no-repeat;
+                cursor:auto;
+            }
+            .hmibuttonredon:hover {
+                cursor:pointer;
+            }
+            .hmibuttonredflashing {
+                width:20px;
+                height:20px;
+                display:block;
+                padding:0;
+                margin:0;
+                background-image:url('./lrb.gif');
+                background-repeat:no-repeat;
+                cursor:auto;
+            }
+            .hmibuttonredflashing:hover {
+                cursor:pointer;
+            }
+            .hmibuttongreenon {
+                width:20px;
+                height:20px;
+                display:block;
+                padding:0;
+                margin:0;
+                background-image:url('./lg.png');
+                background-repeat:no-repeat;
+                cursor:auto;
+            }
+            .hmibuttongreenon:hover {
+                cursor:pointer;
+            }
+            .hmibuttongreenflashing {
+                width:20px;
+                height:20px;
+                display:block;
+                padding:0;
+                margin:0;
+                background-image:url('./lgb.gif');
+                background-repeat:no-repeat;
+                cursor:auto;
+            }
+            .hmibuttongreenflashing:hover {
+                cursor:pointer;
+            }
+            .hmibuttonyellowon {
+                width:20px;
+                height:20px;
+                display:block;
+                padding:0;
+                margin:0;
+                background-image:url('./ly.png');
+                background-repeat:no-repeat;
+                cursor:auto;
+            }
+            .hmibuttonyellowon:hover {
+                cursor:pointer;
+            }
+            .hmibuttonyellowflashing {
+                width:20px;
+                height:20px;
+                display:block;
+                padding:0;
+                margin:0;
+                background-image:url('./lyb.gif');
+                background-repeat:no-repeat;
+                cursor:auto;
+            }
+            .hmibuttonyellowflashing:hover {
+                cursor:pointer;
+            }
+            .hmibuttonyellowredflashing {
+                width:20px;
+                height:20px;
+                display:block;
+                padding:0;
+                margin:0;
+                background-image:url('./lyrb.gif');
+                background-repeat:no-repeat;
+                cursor:auto;
+            }
+            .hmibuttonyellowredflashing:hover {
+                cursor:pointer;
+            }
+            .hmibuttonyellowgreenflashing {
+                width:20px;
+                height:20px;
+                display:block;
+                padding:0;
+                margin:0;
+                background-image:url('./lygb.gif');
+                background-repeat:no-repeat;
+                cursor:auto;
+            }
+            .hmibuttonyellowgreenflashing:hover {
+                cursor:pointer;
+            }
+            .hmicontrolbutton {
+                display:block;
+                color:#FFFFFF;
+                background-color:#999999;
+                width:90px;
+                padding-left:6px;
+                padding-right:6px;
+                padding-top:5px;
+                padding-bottom:5px;
+                font-size:11px;
+                font-family:Arial;
+                font-weight:regular;
+                text-decoration:none;
+                text-align:center;
+                margin: 5px;
+                cursor:auto;
+                border-style: none none none none;
+            }
+            .hmicontrolbutton:hover {
+                background-color: #666666;
+                cursor:pointer;
+            }
+            .hmibuttonnormal60x60 {
+                width:60px;
+                height:60px;
+                display:block;
+                background-image:url('./ln60x60.png');
+                background-repeat:no-repeat;
+                cursor:auto;
+            }
+            .hmibuttonOKtext {
+                width:40px;
+                height:20px;
+                display:block;
+                font-size: 16px;
+                font-weight: bold;
+                color:#999;
+                margin:0;
+                padding:0;
+                padding-top:10px;
+                text-align:center;
+            }
+            div#clear {
+                clear:both;
+                margin:0;
+                padding:0;
+                height:0;
+                width:0;
+                border:0;
+            }
+            div#header {
+                margin-top:25px;
+                margin-left:44px;
+                margin-bottom: 35px; /* 60px - 25px */
+                border-style: none none none none;
+                background-color: #FFFFFF;
+                padding:0;
+                float: none;
+            }
+            div#content {
+                margin-top:13px;
+                margin-left:44px;
+            }
+            div#footer {
+                width:750px;
+                height:20px;
+                font-family: Arial;
+                font-size: 10px;
+                font-weight: normal;
+                color:#333;
+                margin-top:36px;
+                margin-bottom: 4px;
+                margin-left:44px;
+                background-color: #FFFFFF;
+                padding:0;
+                float: none;
+            }
+            div#footer:hover {
+                color:#900;
+            }
+            div#HmiDM {
+                z-index:2;
+                border:5px solid rgb(102,102,102);
+                border:5px solid rgba(102,102,102,0.25);
+                border-radius: 10px 10px 10px 10px;
+                background:#D3D3D3;
+                margin:0;
+                padding-top:20px;
+                padding-left:20px;
+                width:660px;
+                height:350px;
+            }
+            div#HmiDMControl {
+                background:#FFFFFF;
+                border-style:none;
+                padding:0;
+                margin:0;
+                width:690px;
+            }
+            div#HmiDMDisplay, div#trendContainer {
+                z-index:2;
+                border:5px solid rgb(102,102,102);
+                border:5px solid rgba(102,102,102,0.5);
+                border-radius: 10px 10px 10px 10px;
+                background:#D3D3D3;
+                margin:0;
+                padding:0;
+            }
+            div#displyupperleft {
+                border-style:none solid solid none;
+                border-width:2px;
+            }
+            div#displyuppermiddle {
+                border-style:none none solid none;
+                border-width:2px;
+            }
+            div#displyupperright {
+                border-style:none none solid none;
+                border-width:2px;
+            }
+            div#displymiddlemiddle {
+                border-style:none none none solid;
+                border-width:2px;
+                margin:0;
+                padding:0;
+            }
+            div#displylowermiddle {
+                border-style:none none none solid;
+                border-width:2px;
+            }
+            div#InputEditor {
+                position:absolute;
+                left:180px;
+                top:240px;
+                display:none;
+                border-top:none;
+                border-bottom:2px solid #FFF;
+                border-left:1px solid #FFF;
+                border-right:1px solid #FFF;
+                width:470px;
+                height:170px;
+                padding-bottom:24px;
+                padding-left:10px;
+            }
+            div#dialogclosebutton {
+                border-bottom:2px solid #FFF;
+                border-left:2px solid #FFF;
+                text-align:center;
+                vertical-align:middle;
+                width:18px;
+                height:18px;
+                margin:0;
+                padding:0;
+                cursor:auto;
+            }
+            div#dialogclosebutton:hover {
+                cursor:pointer;
+            }
+            div#inputeditorupperleft {
+                width:450px;
+                height:18px;
+            }
+            div#inputeditorinputdialog {
+                width:450px;
+                height:120px;
+                margin-top:6px;
+                margin-right:10px;
+            }
+            div#inputeditorcontrolbuttons {
+                width:470px;
+                height:36px;
+            }
+            div#trendContainer {
+                display:none;
+                width:680px;
+                height:400px;
+                margin-left:44px;
+                z-index:1000;
+            }
+            div#trend {
+                width:660px;
+                height:300px;
+            }
+            div#trendcontrol {
+                width:660px;
+                height:40px;
+            }
+            .legendentry {
+                float:left;
+                width:130px;
+                height:50px;
+                margin-left:2px;
+                display: block;
+            }
+            .removecurvebutton {
+                float:left;
+                margin-left:10px;
+                text-align:center;
+                vertical-align:middle;
+                width:18px;
+                height:18px;
+                margin:0;
+                padding:0;
+                cursor:auto;
+            }
+            .removecurvebutton:hover {
+                cursor:pointer;
+            }
+            div#trend .dygraph-title {
+                font-size: 20px;
+                text-shadow: gray 2px 2px 2px;
+            }
+            div#trend .dygraph-ylabel {
+                font-size: 12px;
+                text-shadow: gray -2px 2px 2px;
+            }
+            .footeritem {
+                color: #999999;
+                font-family: Arial,Geneva,Helvetica,sans-serif;
+                font-size: 10px;
+                line-height: 13px;
+            }
+            .footerseperator {
+                color: #999999;
+                margin-left:5px;
+                margin-right:5px;
+            }
+            .trendcontrolbutton {
+                display:block;
+                color:#FFFFFF;
+                background-color:#999999;
+                width:90px;
+                padding-left:6px;
+                padding-right:6px;
+                padding-top:5px;
+                padding-bottom:5px;
+                font-size:11px;
+                font-family:Arial;
+                font-weight:regular;
+                text-decoration:none;
+                text-align:center;
+                margin: 5px;
+                cursor:auto;
+                border-style: none none none none;
+            }
+            .trendcontrolbutton:hover {
+                background-color: #666666;
+                cursor:pointer;
+            }
+        </style>
+    </head>
+    <body  onload="DoOnLoad();">
+        <div id="busy">
+            <div class="busy" id="bsy1"></div>
+            <div class="busy" id="bsy2"></div>
+            <div class="busy" id="bsy3"></div>
+            <div class="busy" id="bsy4"></div>
+            <div class="busy" id="bsy5"></div>
+            <div class="busy" id="bsy6"></div>
+            <div class="busy" id="bsy7"></div>
+            <div class="busy" id="bsy8"></div>
+        </div>
+        <div id="header">
+            <img src="?companypic" />
+        </div>
+        <div class="headerhorizontalline">
+            &nbsp;
+        </div>
+        <div class="headernavigationbar">
+            &nbsp;
+        </div>
+        <div class="headerhorizontalline">
+            &nbsp;
+        </div>
+        <div id="content">
+            <div id="HmiDMControl">
+                <a href="javascript:GoHome();"><div id="home" class="hmicontrolbutton" style="float:left;">Home</div></a>
+                <a href="javascript:RefreshPage();"><div id="refresh" class="hmicontrolbutton"  style="float:left;">Refresh</div></a>
+                <a href="javascript:HideTrendViewer();"><div id="hidetrendviewer" class="hmicontrolbutton"  style="float:left;display:none;">Show/Hide trend</div></a>
+                <a href="javascript:DoLogonoff();"><div id="login" class="hmicontrolbutton" style="float:right;">Login</div></a>
+                <div id="clear"></div>
+            </div>
+            <div id="HmiDM">
+                <div id="upperleft" style="float:left; width:15%; height:80%;">
+                    <a href="javascript:GoHome();">
+                        <div id="infobutton" style="float:left;" class="hmibuttonnormal">
+                            &nbsp;
+                        </div>
+                    </a>
+                    <div id="infobuttontext" style="float:left;" class="hmibuttontext">
+                        Info
+                    </div>
+                    <div id="clear"></div>
+                </div>
+                <div id="uppermiddle" style="float:left;width:80%;height:80%;">
+                    <div id="displyupperleft" style="float:left;width:10%;height:10%;text-align:center;" class="displaybackground">
+                        &nbsp;
+                    </div>
+                    <div id="displyuppermiddle" style="float:left;width:85%;height:10%;" class="hmipagetitle displaybackground">
+                        &nbsp;
+                    </div>
+                    <div id="displymiddleleft" style="float:left;width:10%;height:85%;" class="displaybackground">
+                        &nbsp;
+                    </div>
+                    <div id="displymiddlemiddle" style="float:left;width:85%;height:85%;" class="displaybackground">
+                        <iframe id="HMI" width="100%" height="100%" frameborder="0" marginwidth="0" marginheight="0" scrolling="auto"><p>Your client doesn't support iframe!</p></iframe>
+                    </div>
+                    <div id="clear"></div>
+                </div>
+                <div id="upperright" style="float:left; width:5%; height:80%;">
+                    &nbsp;
+                </div>
+                <div id="clear"></div>
+
+                <div id="lowerleft" style="float:left; width:15%; height:20%;">
+                    <a href="javascript:GoAlarm();" target="_parent">
+                        <div id="alarmbutton" style="float:left;margin-top:25px;" class="hmibuttonnormal">
+                            &nbsp;
+                        </div>
+                    </a>
+                    <div id="alarmbuttontext" style="float:left;margin-top:25px;" class="hmibuttontextalarm">
+                        &nbsp;
+                    </div>
+                    <div id="clear"></div>
+                </div>
+                <div id="lowermiddle" style="float:left;width:80%;height:20%;">
+                    <div id="OKbuttontext" style="float:right;" class="hmibuttonOKtext">
+                        OK
+                    </div>
+                    <div id="OKbutton" style="float:right;" class="hmibuttonnormal60x60">
+                        &nbsp;
+                    </div>
+                    <div id="dummy" style="float:right;width:20%">
+                        &nbsp;
+                    </div>
+                    <a href="javascript:history.back();" target="_parent">
+                        <div id="escapebutton" style="float:right;margin-top:25px;" class="hmibuttonnormal">
+                            &nbsp;
+                        </div>
+                    </a>
+                    <div id="escapebuttontext" style="float:right;margin-top:25px;" class="hmibuttontext">
+                        ESC
+                    </div>
+                    <div id="clear"></div>
+                </div>
+                <div id="lowerright" style="float:left; width:5%; height:20%;">
+                    &nbsp;
+                </div>
+                <div id="clear"></div>
+            </div>
+            <div id="InputEditor" class="editorbackground">
+                <div id="inputeditorupperleft" style="float:left;">&nbsp;</div>
+                <a href="javascript:CloseEditor();">
+                    <div id="dialogclosebutton" style="float:left;"><img src="./close_A.gif" alt="X" style="border:0;margin-bottom:5px;"/></div>
+                </a>
+                <div id="clear"></div>
+                <div id="inputeditorinputdialog">
+                    <iframe id="Input" src="./HMIinput.cgi" width="100%" height="100%" frameborder="0" marginwidth="0" marginheight="0" scrolling="auto"><p>Your client doesn't support iframe!</p></iframe>
+                </div>
+                <div id="inputeditorcontrolbuttons">
+                    <a id="submit" href="javascript:SubmitForm()"><div id="savebutton" class="hmicontrolbutton" style="float:left;">Save</div></a>
+                    <a id="reset" href="javascript:CloseEditor()"><div id="cancelbutton" class="hmicontrolbutton" style="float:left;">Cancel</div></a>
+                    <div id="clear"></div>
+                </div>
+            </div>
+        </div>
+        <div id="seperator01" class="headerhorizontalline">
+        </div>
+        <div id="trendContainer" style="float:left;display:none;">
+            <div id="trendcontrol" style="display:none;">
+                <a href="javascript:StartStopTrending();">
+                    <div id="startstoptrending" class="trendcontrolbutton">Stop trending</div>
+                </a>
+            </div>
+            <div id="legend">
+            </div>
+            <div id="clear"></div>
+            <div id="trend" class="chart">
+                No Datapoints available. Please choose datapoints from the pages above.
+            </div>
+        </div>
+        <div id="clear"></div>
+        <div id="footer">
+            <a title="?companyname" href="?companyurl" target="_blank">
+                <div id="companyname" style="float:left;" class="footeritem">?companyname</div>
+            </a>
+            <div id="companynamesep" style="float:left;" class="footerseperator">|</div>
+
+            <a title="?legaltext1" href="?legalurl1" target="_blank">
+                <div id="legaltext1" style="float:left;" class="footeritem">?legaltext1</div>
+            </a>
+            <div id="legaltext1sep" style="float:left;" class="footerseperator">|</div>
+
+            <a title="?legaltext2" href="?legalurl2" target="_blank">
+                <div id="legaltext2" style="float:left;" class="footeritem">?legaltext2</div>
+            </a>
+            <div id="legaltext2sep" style="float:left;" class="footerseperator">|</div>
+
+            <a title="?legaltext3" href="?legalurl3" target="_blank">
+                <div id="legaltext3" style="float:left;" class="footeritem">?legaltext3</div>
+            </a>
+            <div id="legaltext3sep" style="float:left;" class="footerseperator">|</div>
+
+            <a title="?legaltext4" href="?legalurl4" target="_blank">
+                <div id="legaltext4" style="float:left;" class="footeritem">?legaltext4</div>
+            </a>
+            <div id="clear"></div>
+        </div>
+    </body>
+</html>
