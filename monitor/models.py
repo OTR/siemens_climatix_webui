@@ -37,7 +37,7 @@ class TempVolModel(models.Model):
 
 	CVU_name = models.CharField(max_length=1, choices=CVU_NAME.choices,
 								default=CVU_NAME.CVU_1_1)
-	temp_intake = models.FloatField() # TODO: DecimalFeld ???
+	temp_intake = models.FloatField() # TODO: DecimalField ???
 	temp_exhaust = models.FloatField()
 	hum_intake = models.FloatField()
 	hum_exhaust = models.FloatField()
