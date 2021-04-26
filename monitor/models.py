@@ -1,15 +1,15 @@
 from django.db import models
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from django.utils.translation import gettext_lazy as gtl
 
 # Create your models here.
 def get_start_epoch():
-	"""return 01.01.1970 date"""
-	# FIXME: RuntimeWarning: DateTimeField TempVolModel.datetime
-	#  received a naive datetime (2021-04-26 16:32:54.836014)
-	#  while time zone support is active.
-	#   RuntimeWarning)
-	return datetime.fromtimestamp(0.0)
+	"""return 01.01.1970 date with UTC+3 timezone"""
+
+	_date =  datetime.fromtimestamp(0.0)
+	tz = timezone(timedelta(hours=3)) # TODO: get rid of hardcoded timezone
+	_date_with_tz = _date.replace(tzinfo=tz)
+	return _date_with_tz
 
 class TempVolModel(models.Model):
 	""""""

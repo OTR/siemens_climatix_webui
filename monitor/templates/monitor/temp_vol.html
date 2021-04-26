@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>List of CVU</title>
+<!--    <link rel="stylesheet" href="style.css">-->
+<!--    <script src="script.js"></script>-->
+  </head>
+  <body>
+{% if object_list %}
+    <table>
+    	<tr>
+    		<th>Установка</th>
+    		<th>Дата</th>
+    		<th>Темп Приток</th>
+    		<th>Расход Приток</th>
+    		<th>Темп Вытяжка</th>
+    		<th>Расход Вытяжка</th>
+    	</tr>
+    {% for object in object_list %}
+    	<tr>
+    		<th>{{ object.get_name }}</th>
+    		<th>{{ object.get_datetime }}</th>
+    		<th>{{ object.temp_intake }}</th>
+    		<th>{{ object.vol_intake }}</th>
+    		<th>{{ object.temp_exhaust }}</th>
+    		<th>{{ object.vol_exhaust }}</th>
+    	</tr>
+    {% endfor %}
+    </table>
+{% else %}
+	<span>Hello world!</span>
+{% endif %}
+  </body>
+</html>
