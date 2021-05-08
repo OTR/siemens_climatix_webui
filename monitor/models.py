@@ -1,6 +1,7 @@
 from django.db import models
 from datetime import datetime, timezone, timedelta
 from django.utils.translation import gettext_lazy as gtl
+from django.utils import timezone as _timezone
 
 # Create your models here.
 def get_start_epoch():
@@ -51,8 +52,11 @@ class TempVolModel(models.Model):
 		return f"{self.CVU_NAME(self.CVU_name).label}"
 
 	def get_datetime(self):
-		"""return readable datetime when smaple was taken"""
-		return f"{self.datetime.strftime('%d.%m.%Y %H:%M')}"
+		"""return readable datetime when sample was taken"""
+
+		# 26.04.2021 15:08 UTC => 06.05.2021 18:08 MSK
+		local_dt = _timezone.localtime(self.datetime)
+		return f"{local_dt.strftime('%d.%m.%Y %H:%M')}"
 
 	def __str__(self):
 		"""Return ЦВУ 1.1 2004.06.03 23:50"""

@@ -24,7 +24,14 @@
           const rows = document.querySelectorAll("th");
           const json_obj = JSON.parse(resp);
           for (const row of rows) {
-            row.querySelector("span[name='vol']").textContent = json_obj[row.id]["vol_intake"];
+            let ourGuy = row.querySelector("span[name='vol']");
+            ourGuy.textContent = json_obj[row.id]["vol_intake"];
+            if (json_obj[row.id]["vol_intake"]
+               && json_obj[row.id]["vol_exhaust"]) {
+                ourGuy.parentElement.style.backgroundColor = "green";
+            } else {
+                ourGuy.parentElement.style.backgroundColor = "yellow";
+            }
           }
       }
 
