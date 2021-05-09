@@ -191,7 +191,7 @@ class MySession(requests.Session):
         return crash
 
     def get_crash_hist(self):
-        """As list of concatenated string lines"""
+        """As list of dictionaries"""
         history = []
         is_last = False
         i = 0
@@ -256,7 +256,6 @@ def main(mode="infinite_loop", loglevel=logging.ERROR, **args):
     my_logger.error("help me")
     if mode:
         if mode == "infinite_loop":
-            print(2)
             """Безконечно запрашивать температуру и расход
             и писать в файл"""
             while True:
@@ -279,8 +278,7 @@ def main(mode="infinite_loop", loglevel=logging.ERROR, **args):
             _id = CONFIG["translate"][args.get("cvu")]
             my_sess = MySession(_id=_id)
             history = my_sess.get_crash_hist()
-            print(1)
-            return history  # List of strings
+            return history  # List of dicts
 
     else:
         pass  # TODO: sys.exit()
@@ -316,7 +314,6 @@ if __name__ == "__main__":
         loglevel = logging.DEBUG
 
     if args.mode == "crash_hist_once" and args.cvu is not None:
-        print(1)
         mode = args.mode
         main(mode=mode, loglevel=loglevel, cvu=args.cvu)
     else:

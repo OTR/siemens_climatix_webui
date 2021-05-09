@@ -5,7 +5,7 @@ from datetime import datetime
 
 from django.http import JsonResponse, HttpResponse
 from django.views.generic import ListView, TemplateView
-
+from django.shortcuts import render
 from monitor.models import TempVolModel
 from scripts import proof
 from scripts.populate_db import tz, rand_float
@@ -51,9 +51,10 @@ def crash_history_view(request):
         if cvu:
             if cvu in "0123456789ABCDEF":
                 history = proof.main(mode="crash_hist_once", cvu=cvu)
-                content = "\n".join(history)
 
-                return HttpResponse(content)
+                return render(request, "monitor/crash_history.html",
+                              context={"history": history,
+                                       "cvu_name": proof.CONFIG["translate"][cvu]})
             else:
                 return HttpResponse("You may need to pick correct id for cvu",
                                     content_type='text/plain; charset=utf8')

@@ -1,0 +1,32 @@
+{% extends 'monitor/base.html' %}
+
+{% block content %}
+{% if history %}
+    <h2 class="text-center">ЦВУ {{ cvu_name }}</h2>
+    <table class="table table-striped table-bordered ">
+        <thead>
+    	<tr>
+<!--    		<th scope="col">Дата обнаружения</th>-->
+    		<th scope="col">Название ошибки</th>
+    		<th scope="col">Приоритет</th>
+    		<th scope="col">Приоритет букв</th>
+    		<th scope="col">Дата возникновения</th>
+    	</tr>
+        </thead>
+        <tbody class="">
+    {% for object in history %}
+    	<tr>
+<!--    		<th>{{ object.time_found }}</th>-->
+    		<th>{{ object.text }}</th>
+    		<th>{{ object.priority }}</th>
+    		<th>{{ object.prior_text }}</th>
+    		<th>{{ object.date }}</th>
+    	</tr>
+    {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+	<span>Hello world!</span>
+{% endif %}
+
+{% endblock content %}
