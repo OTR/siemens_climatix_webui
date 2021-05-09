@@ -1,6 +1,6 @@
 *__pycache__*
 db.sqlite3
 .idea
-logs
-.pytest_cache/
+logs/**
+**/.pytest_cache/
 venv

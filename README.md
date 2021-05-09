@@ -1,6 +1,12 @@
-o005,e,0| //
-o010,e,0|
-o015,e,0|
+# Installation #
+
+* pip install -r requirements.txt
+* python manage.py makemigrations
+* python manage.py migrate
+* python manage.py createsuperuser // (optional)
+
+
+
 o023,v,10.633| // Наруж темп
 o029,v,62.43| // Наруж влаж
 o035,v,23.921| // Темп рец приток
@@ -61,9 +67,7 @@ o353,e,0|
 o359,e,0|
 o365,e,0|
 
-o005,e,5| // Модуль
-o010,e,3| // Камера
-o015,e,2| // Установка
+
 o023,v,13.922|  .
 o029,v,52.36|  .
 o035,v,19.257|  .

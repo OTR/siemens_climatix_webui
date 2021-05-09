@@ -1,4 +1,8 @@
+"""
+Urls for my web site
+"""
 from django.urls import path
+
 from monitor.views import IndexView, ListTempVolView, latest_view
 from monitor.views import crash_history_view
 
