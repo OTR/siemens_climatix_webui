@@ -1,80 +1,55 @@
 """
-Script for parsing Web UI
+A script for polling PLC builtin web server. Business logic is placed here.
 """
 import argparse
-from datetime import datetime
 import logging
+from datetime import datetime
 from pathlib import Path
 from time import sleep
+from typing import Union
 
-from lxml import html
 import requests
+from lxml import html
 from requests.auth import HTTPBasicAuth
 from requests.exceptions import ConnectionError
 
-user = "WEB"  # FIXME: refactor it. add to global CONFIG variable
-passwd = "SBTAdmin!"
-
-# requests.exceptions.ConnectionError: HTTPConnectionPool(host='169.254.186.211', port=80):
-
-
-CONFIG = {
-    "hosts": {
-        "1.1": "169.254.188.220",
-        "1.2": "169.254.130.48",
-        "1.3": "169.254.1.28",
-        "1.4": "169.254.1.42",
-        "2.1": "169.254.97.128",  # "2.1" : "169.254.186.211",
-        "2.2": "169.254.53.139",
-        "2.3": "169.254.45.14",
-        "2.4": "169.254.58.171",  # "2.4" : "169.254.219.248",
-        "3.1": "169.254.157.21",
-        "3.2": "169.254.2.251",  # "169.254.102.205",
-        "3.3": "169.254.164.35",
-        "3.4": "169.254.154.250",
-        "4.1": "169.254.154.245",
-        "4.2": "169.254.242.245",
-        "4.3": "169.254.56.35",
-        "4.4": "169.254.252.44",
-    },
-    "translate": {
-        "0": "1.1",
-        "1": "1.2",
-        "2": "1.3",
-        "3": "1.4",
-        "4": "2.1",
-        "5": "2.2",
-        "6": "2.3",
-        "7": "2.4",
-        "8": "3.1",
-        "9": "3.2",
-        "A": "3.3",
-        "B": "3.4",
-        "C": "4.1",
-        "D": "4.2",
-        "E": "4.3",
-        "F": "4.4"
-    }
-}
+# TODO: Don't forget to replace `test_settings` with `prod_settings`
+#  in case of production
+from config.settings.test_settings import AHU_IPS, AHU_HISTORY_DIR
+from config.settings.test_settings import SIEMENS_USER, SIEMENS_PASSWD
 
 
-class MySession(requests.Session):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args)  # FIXME:
-        self.auth = HTTPBasicAuth(user, passwd)
-        self.id = kwargs["_id"]
-        self.host = CONFIG["hosts"][self.id]
-        self.basedir = "C:/Users/User/AppData/logs/"  # FIXME: get rid of hardcoded path
-        self.basename = "ЦВУ_" + self.id.replace(".", "_")
+# TODO: catch `requests.exceptions.ConnectionError`
+#  `HTTPConnectionPool(host='169.254.186.211', port=80)`
 
-    def gettime(self) -> str:
-        """@return string"""
 
+class PLCWebClient(requests.Session):
+    """A Web Client to poll data from builtin PLC Web Server."""
+
+    def __init__(self, **kwargs):
+        """"""
+        super(PLCWebClient, self).__init__()
+        self.auth = HTTPBasicAuth(SIEMENS_USER, SIEMENS_PASSWD)
+        self.name = kwargs["name"]
+        self.host = AHU_IPS["hosts"][self.name]
+        self.log_dir = AHU_HISTORY_DIR
+        self.basename = "ЦВУ_" + self.name.replace(".", "_")
+
+    def get_current_time(self) -> str:
+        """
+        Return current formatted time.
+
+        :return: a string with date
+        """
         return datetime.now().strftime("%d.%m.%Y %H:%M")
 
-    def getr(self, path):
-        # Get relative path
-        # example self.getr("/main.htm")
+    def getr(self, path: str) -> Union[str, None]:
+        """
+        Get absolute URL from query. Example: `self.getr("/main.htm")`
+
+        :param path: a query
+        :return: decoded with UTF-8 HTML source
+        """
         url = f"http://{self.host}{path}"
         try:
             resp = self.get(url)
@@ -101,8 +76,15 @@ class MySession(requests.Session):
         tree = html.fromstring(body)
         print(tree.xpath('//span[@id="o061"]//text()')[0].strip())
 
-    def main_menu_read(self):
-        """Get dynamic values for Main menu"""
+    def main_menu_read(self) -> dict:
+        """
+        Make a request to PLC Web Server, parse response body which is a mess.
+        `HMI00010Read.cgi` is an endpoint to get dynamically changed values to
+        draw `Main menu`.
+
+        :return: a dict containing intake and exhaust temperature, relative
+            humidity, and air volume.
+        """
         body = self.getr("/HMI00010Read.cgi")
         body = body.replace("\r\n", "")
         body_list = body.split("|")
@@ -122,18 +104,18 @@ class MySession(requests.Session):
             "vol_exhaust": vol_exhaust
         }
 
-    def get_settings_read(self):
-        """Get settings for unit"""
-        pass
+    def get_settings_read(self) -> None:
+        """Get settings for unit."""
+        raise NotImplementedError
 
-    def get_inputs_read(self):
-        """Get input values from sensors"""
+    def get_inputs_read(self) -> None:
+        """Get input values from sensors."""
         body = self.getr("/HMI00013Read.cgi")
         body = body.replace("\r\n", "")
         body_list = body.split("|")
         # float(body_list[5].split(",")[-1])
 
-    def main_menu_pretty(self):
+    def main_menu_pretty(self) -> dict:
         """"""
         params = self.main_menu_read()
 
@@ -146,13 +128,13 @@ class MySession(requests.Session):
         params["vol_intake"] = round(params["vol_intake"] / 100.0) * 100.0
         params["vol_exhaust"] = round(params["vol_exhaust"] / 100.0) * 100.0
 
-        params["time"] = self.gettime()
+        params["time"] = self.get_current_time()
 
-        params["id"] = self.id
+        params["id"] = self.name
 
         return params
 
-    def get_crash_hist_entry(self, entry_id):
+    def get_crash_hist_entry(self, entry_id) -> dict:
         """
         From 0x01
         http://169.254.188.220/HMI65210.cgi?tid:0x26%200x01
@@ -190,8 +172,12 @@ class MySession(requests.Session):
 
         return crash
 
-    def get_crash_hist(self):
-        """As list of dictionaries"""
+    def get_crash_hist(self) -> list[dict]:
+        """
+        Get a crash history (alarms, faults, warnings), i.e. logs.
+
+        :return: a list of dicts, each dict represents a history entry
+        """
         history = []
         is_last = False
         i = 0
@@ -201,90 +187,105 @@ class MySession(requests.Session):
             if entry["text"] == "":
                 is_last = True
             else:
-                entry["time_found"] = self.gettime()
+                entry["time_found"] = self.get_current_time()
                 history.append(entry)
 
-        # history is DESCEND so reverse it
+        # history is DESCEND by default so reverse it
         history.reverse()
 
         return history
 
     def simple_text_hist(self) -> None:
-        """"""
+        """Write crash history in a plain text file."""
         hist = self.get_crash_hist()
         hist_as_plain_text = ""
         for entry in hist:
-            pattern = f'{entry["time_found"]}\t{entry["text"].ljust(60)}\t' \
-                      f'{entry["priority"]}\t{entry["prior_text"].ljust(15)}\t' \
+            pattern = f'{entry["time_found"]}\t' \
+                      f'{entry["text"].ljust(60)}\t' \
+                      f'{entry["priority"]}\t' \
+                      f'{entry["prior_text"].ljust(15)}\t' \
                       f'{entry["date"]}'
             hist_as_plain_text += pattern + "\n"
-        timestamp = str(self.gettime())
+        timestamp = str(self.get_current_time())
         # 12.12.2021 14:50 => 12_12_2021_14_50
-        timestamp = timestamp.replace(" ", "_")
+        timestamp = timestamp.replace(" ", "_")  # FIXME:
         timestamp = timestamp.replace(".", "_")
         timestamp = timestamp.replace(":", "_")
-        path = self.basedir + timestamp + "_crash_hist_" + self.basename + ".txt"
+        path = self.log_dir + timestamp + "_crash_hist_" + self.basename + ".txt"
         with open(path, "w") as f1:
             f1.write(hist_as_plain_text)
 
     def simple_txt(self) -> None:
-        """"""
+        """
+        Write intake and exhaust temperature and air volume
+        in a plain text file.
+        """
         params = self.main_menu_pretty()
 
         pattern = f'{params["time"]}\t{params["temp_intake"]}\t' \
                   f'{int(params["vol_intake"])}\t\t{params["temp_exhaust"]}\t' \
                   f'{int(params["vol_exhaust"])}\n'
 
-        path = self.basedir + self.basename + ".txt"
+        path = self.log_dir + self.basename + ".txt"
         with open(path, "a") as f1:
             f1.write(pattern)
 
 
-def main(mode="infinite_loop", loglevel=logging.ERROR, **args):
-    """"""
+def main(run_mode="infinite_loop", use_loglevel=logging.ERROR, **args) -> None:
+    """
+    Run different methods depend on parsed options.
+
+    :param run_mode:
+    :param use_loglevel:
+    """
     project_dir = Path(__file__).resolve().parent.parent
     log_file = project_dir / "logs" / "log.txt"
     # Establish logger object
     my_logger = logging.getLogger("monitor")
     fh = logging.FileHandler(log_file)
-    fh.setLevel(loglevel)
+    fh.setLevel(use_loglevel)
     formatter = logging.Formatter(fmt="%(asctime)s %(levelname)s %(message)s",
                                   datefmt="%Y.%m.%d %H:%M:%S")
     fh.setFormatter(formatter)
     my_logger.addHandler(fh)
     # Reminder: critical > error > warning > info > debug
-    my_logger.error("help me")
-    if mode:
-        if mode == "infinite_loop":
+
+    if run_mode:
+        if run_mode == "infinite_loop":
             """Безконечно запрашивать температуру и расход
             и писать в файл"""
             while True:
-                for key in CONFIG["hosts"].keys():
-                    my_sess = MySession(_id=key)
+                for key in AHU_IPS["hosts"].keys():
+                    my_sess = PLCWebClient(_id=key)
                     my_sess.simple_txt()
 
                 sleep(10 * 60)  # half an hour
-        elif mode == "temp_vol_once":
+        elif run_mode == "temp_vol_once":
             """Запросить температуру и расход один раз и записать
             в файл"""
-            for key in CONFIG["hosts"].keys():
-                my_sess = MySession(_id=key)
+            for key in AHU_IPS["hosts"].keys():
+                my_sess = PLCWebClient(_id=key)
                 my_sess.simple_txt()
-        elif mode == "crash_hist_once_for_all":
-            for key in CONFIG["hosts"].keys():
-                my_sess = MySession(_id=key)
+        elif run_mode == "crash_hist_once_for_all":
+            for key in AHU_IPS["hosts"].keys():
+                my_sess = PLCWebClient(_id=key)
                 my_sess.simple_text_hist()
-        elif mode == "crash_hist_once" and args.get("cvu") is not None:
-            _id = CONFIG["translate"][args.get("cvu")]
-            my_sess = MySession(_id=_id)
+        elif run_mode == "crash_hist_once" and args.get("ahu") is not None:
+            _id = AHU_IPS["translate"][args.get("ahu")]
+            my_sess = PLCWebClient(_id=_id)
             history = my_sess.get_crash_hist()
-            return history  # List of dicts
+            return history  # List of dicts FIXME: should not return
 
     else:
         pass  # TODO: sys.exit()
 
 
-if __name__ == "__main__":
+def parse_arguments() -> argparse.Namespace:
+    """
+    Parse arguments from console.
+
+    :return: named arguments
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--debug",
                         action="store_true",
@@ -292,31 +293,34 @@ if __name__ == "__main__":
                         )
     parser.add_argument("--mode",
                         default="temp_vol_once",
-                        choices=["temp_vol_once",
-                                 "infinite_loop",
-                                 "crash_hist_once_for_all",
-                                 "crash_hist_once"],
+                        choices=["temp_vol_once", "infinite_loop",
+                                 "crash_hist_once_for_all", "crash_hist_once"
+                                 ],
                         help="The mode of launching")
-    parser.add_argument("--cvu",
+    parser.add_argument("--ahu",
                         default=None,
-                        choices=["0", "1", "2", "3",
-                                 "4", "5", "6", "7",
-                                 "8", "9", "A", "B",
-                                 "C", "D", "E", "F"],
-                        help="Identifyer of Central Ventilation Unit")
-    args = parser.parse_args()
+                        choices=["0", "1", "2", "3", "4", "5", "6", "7", "8",
+                                 "9", "A", "B", "C", "D", "E", "F"
+                                 ],
+                        help="Identifier of Central Ventilation Unit")
+
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    named_args = parse_arguments()
 
     mode = "temp_vol_once"
     loglevel = logging.ERROR
-    cvu = None
+    ahu = None
 
-    if args.debug:
+    if named_args.debug:
         loglevel = logging.DEBUG
 
-    if args.mode == "crash_hist_once" and args.cvu is not None:
-        mode = args.mode
-        main(mode=mode, loglevel=loglevel, cvu=args.cvu)
+    if named_args.mode == "crash_hist_once" and named_args.ahu is not None:
+        mode = named_args.mode
+        main(run_mode=mode, use_loglevel=loglevel, ahu=named_args.ahu)
     else:
-        if args.mode:
-            mode = args.mode
-        main(mode=mode, loglevel=loglevel)
+        if named_args.mode:
+            mode = named_args.mode
+        main(run_mode=mode, use_loglevel=loglevel)

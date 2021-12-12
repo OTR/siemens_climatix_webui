@@ -1,26 +1,29 @@
-# Installation #
+### Installation
 
-* pip install -r requirements.txt
-* python manage.py makemigrations
-* python manage.py migrate
-* python manage.py createsuperuser // (optional)
+#### via Pip
 
+```commandline
+$ python -m venv webui_venv
+$ cd webui_venv
+(Windows) $ Scripts/Activate.bat
+(Linux) $ . bin/activate
+$ git clone https://github.com/OTR/siemens_climatix_webui.git webui
+$ cd webui
+$ pip install -r requirements.txt
+$ python manage.py makemigrations
+$ python manage.py migrate
+$ python manage.py createsuperuser // (optional)
+```
 
-* asgiref	== 3.3.4
-* certifi	== 2020.12.5
-* chardet	== 4.0.0
-* Django	== 3.2
-* h11		== 0.12.0
-* httpcore	== 0.12.3
-* httpx	== 0.17.1
-* idna	== 2.10
-* lxml	== 4.6.3
-* pip		== 20.2.3
-* pytz	== 2021.1
-* requests	== 2.25.1
-* rfc3986	== 1.4.0
-* setuptools	== 49.2.1
-* sniffio	== 1.2.0
-* sqlparse	== 0.4.1
-* urllib3	== 1.26.4
-		
+### Run test web server
+
+Run the following command from droject directory
+
+```commandline
+$ python -m http.server --directory ./mock 8888
+```
+
+### Project structure
+
+### TODO List
+

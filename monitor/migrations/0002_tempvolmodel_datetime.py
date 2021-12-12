@@ -14,6 +14,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='tempvolmodel',
             name='datetime',
-            field=models.DateTimeField(default=datetime.datetime(1970, 1, 1, 3, 0)),
+            field=models.DateTimeField(
+                default=datetime.datetime(1970, 1, 1, 3, 0)
+            ),
         ),
     ]

@@ -14,7 +14,11 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='TempVolModel',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.BigAutoField(auto_created=True,
+                                           primary_key=True,
+                                           serialize=False,
+                                           verbose_name='ID')
+                 ),
                 ('temp_intake', models.FloatField()),
                 ('temp_exhaust', models.FloatField()),
                 ('hum_intake', models.FloatField()),

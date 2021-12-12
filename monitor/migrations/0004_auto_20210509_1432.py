@@ -20,6 +20,8 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='tempvolmodel',
             name='datetime',
-            field=models.DateTimeField(default=datetime.datetime(1970, 1, 1, 0, 0, tzinfo=utc)),
+            field=models.DateTimeField(
+                default=datetime.datetime(1970, 1, 1, 0, 0, tzinfo=utc)
+            ),
         ),
     ]
