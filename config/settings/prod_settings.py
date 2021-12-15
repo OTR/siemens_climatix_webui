@@ -9,6 +9,7 @@ AHU_ip_by_name = namedtuple("AHU", "IP name")
 
 ALLOWED_HOSTS = ["127.0.0.1"]
 AHU_PORT = 80
+
 # Identifier as single character, IP address, verbose name
 AHU_IPS = {
     "0": AHU_ip_by_name("169.254.188.220", "1.1"),
@@ -33,5 +34,6 @@ AHU_IPS = {
 #  %APPDATA%, distinguish between app logs and AHU history logs
 AHU_HISTORY_DIR = BASE_DIR / "logs"
 
+# No worries it is standard credentials, no leaking here
 SIEMENS_USER = "WEB"
 SIEMENS_PASSWD = "SBTAdmin!"

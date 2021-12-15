@@ -27,3 +27,6 @@ $ python -m http.server --directory ./mock 8888
 
 ### TODO List
 
+* Navbar covers content when expanding
+
+* Move javascript from `index.html` pattern to separate `.js` file and import it
