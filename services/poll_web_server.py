@@ -15,7 +15,7 @@ from requests.exceptions import ConnectionError
 
 # TODO: Don't forget to replace `test_settings` with `prod_settings`
 #  in case of production
-from config.settings.test_settings import AHU_IPS, AHU_HISTORY_DIR
+from config.settings.test_settings import AHU_IPS, AHU_HISTORY_DIR, AHU_PORT
 from config.settings.test_settings import SIEMENS_USER, SIEMENS_PASSWD
 
 
@@ -30,10 +30,11 @@ class PLCWebClient(requests.Session):
         """"""
         super(PLCWebClient, self).__init__()
         self.auth = HTTPBasicAuth(SIEMENS_USER, SIEMENS_PASSWD)
-        self.name = kwargs["name"]
-        self.host = AHU_IPS["hosts"][self.name]
+        self.ahu_id = kwargs["ahu_id"]
+        self.ahu_name = AHU_IPS[self.ahu_id].name
+        self.ahu_ip = AHU_IPS[self.ahu_id].IP
         self.log_dir = AHU_HISTORY_DIR
-        self.basename = "ЦВУ_" + self.name.replace(".", "_")
+        self.basename = "ЦВУ_" + self.ahu_name.replace(".", "_")
 
     def get_current_time(self) -> str:
         """
@@ -43,14 +44,14 @@ class PLCWebClient(requests.Session):
         """
         return datetime.now().strftime("%d.%m.%Y %H:%M")
 
-    def getr(self, path: str) -> Union[str, None]:
+    def get_request_by_query(self, query: str) -> Union[str, None]:
         """
         Get absolute URL from query. Example: `self.getr("/main.htm")`
 
-        :param path: a query
+        :param query: a query (relative part of URL)
         :return: decoded with UTF-8 HTML source
         """
-        url = f"http://{self.host}{path}"
+        url = f"http://{self.ahu_ip}:{AHU_PORT}{query}"
         try:
             resp = self.get(url)
             if resp.status_code == 404:
@@ -72,7 +73,7 @@ class PLCWebClient(requests.Session):
         Расход вытяжка span id="o066
         body = self.getr("/HMI00010.cgi")
         """
-        body = self.getr("/HMI00010.cgi")
+        body = self.get_request_by_query("/HMI00010.cgi")
         tree = html.fromstring(body)
         print(tree.xpath('//span[@id="o061"]//text()')[0].strip())
 
@@ -85,7 +86,7 @@ class PLCWebClient(requests.Session):
         :return: a dict containing intake and exhaust temperature, relative
             humidity, and air volume.
         """
-        body = self.getr("/HMI00010Read.cgi")
+        body = self.get_request_by_query("/HMI00010Read.cgi")
         body = body.replace("\r\n", "")
         body_list = body.split("|")
         temp_intake = float(body_list[5].split(",")[-1])
@@ -110,7 +111,7 @@ class PLCWebClient(requests.Session):
 
     def get_inputs_read(self) -> None:
         """Get input values from sensors."""
-        body = self.getr("/HMI00013Read.cgi")
+        body = self.get_request_by_query("/HMI00013Read.cgi")
         body = body.replace("\r\n", "")
         body_list = body.split("|")
         # float(body_list[5].split(",")[-1])
@@ -130,7 +131,7 @@ class PLCWebClient(requests.Session):
 
         params["time"] = self.get_current_time()
 
-        params["id"] = self.name
+        params["id"] = self.ahu_name
 
         return params
 
@@ -148,11 +149,21 @@ class PLCWebClient(requests.Session):
                             "3": "Предупр. (C)",
                             "4": "Нет аварии",
                             "5": "История соб."}
-        body = self.getr(f"/HMI65210.cgi?tid:0x26%20{hex(entry_id)}")
+        # FIXME: Key Error, fix fake Response object to pass parsing
+        # '+++?42?+++' => 2
+        body = self.get_request_by_query(f"/HMI65210.cgi?tid:0x26%20{hex(entry_id)}")
         tree = html.fromstring(body)
         crash = {}
         crash["text"] = tree.xpath('//span[@id="o008"]//text()')[0].strip()
         crash["priority"] = tree.xpath('//span[@id="o014"]//text()')[0].strip()
+
+        # FIXME: DELETE ME, monkey patching because has no access to working PLC
+        #  on a real web server `+++?42?+++` is just a placeholder then after
+        #  javascript function call it is replaces with actual text value
+        crash["text"] = "Авария холодильной машины"
+        crash["priority"] = "1"
+        # END of monkey patching
+
         crash["prior_text"] = priority_mapping[crash["priority"]]
 
         date = ""
@@ -179,16 +190,22 @@ class PLCWebClient(requests.Session):
         :return: a list of dicts, each dict represents a history entry
         """
         history = []
-        is_last = False
+        is_last_entry = False
         i = 0
-        while not is_last:
+        # FIXME: this loop becomes infinite on a test server
+        #  monkey patch is needed
+        while not is_last_entry:
             i += 1
             entry = self.get_crash_hist_entry(i)
             if entry["text"] == "":
-                is_last = True
+                is_last_entry = True
             else:
                 entry["time_found"] = self.get_current_time()
                 history.append(entry)
+
+            # FIXME: monkey patch
+            if i > 50:
+                is_last_entry = True
 
         # history is DESCEND by default so reverse it
         history.reverse()
@@ -208,7 +225,7 @@ class PLCWebClient(requests.Session):
             hist_as_plain_text += pattern + "\n"
         timestamp = str(self.get_current_time())
         # 12.12.2021 14:50 => 12_12_2021_14_50
-        timestamp = timestamp.replace(" ", "_")  # FIXME:
+        timestamp = timestamp.replace(" ", "_")  # FIXME: DRY
         timestamp = timestamp.replace(".", "_")
         timestamp = timestamp.replace(":", "_")
         path = self.log_dir + timestamp + "_crash_hist_" + self.basename + ".txt"
@@ -238,9 +255,11 @@ def main(run_mode="infinite_loop", use_loglevel=logging.ERROR, **args) -> None:
     :param run_mode:
     :param use_loglevel:
     """
-    project_dir = Path(__file__).resolve().parent.parent
+    project_dir = Path(__file__).resolve().parent.parent  # FIXME: use config
     log_file = project_dir / "logs" / "log.txt"
+
     # Establish logger object
+    # FIXME: use project defined logger, no need to create it again
     my_logger = logging.getLogger("monitor")
     fh = logging.FileHandler(log_file)
     fh.setLevel(use_loglevel)
@@ -255,24 +274,26 @@ def main(run_mode="infinite_loop", use_loglevel=logging.ERROR, **args) -> None:
             """Безконечно запрашивать температуру и расход
             и писать в файл"""
             while True:
-                for key in AHU_IPS["hosts"].keys():
-                    my_sess = PLCWebClient(_id=key)
+                for ahu_id in AHU_IPS.keys():
+                    my_sess = PLCWebClient(ahu_id=ahu_id)
                     my_sess.simple_txt()
 
-                sleep(10 * 60)  # half an hour
+                # FIXME: no magic constants,
+                #  import named time delays from config
+                sleep(10 * 60)
         elif run_mode == "temp_vol_once":
             """Запросить температуру и расход один раз и записать
             в файл"""
-            for key in AHU_IPS["hosts"].keys():
-                my_sess = PLCWebClient(_id=key)
+            for ahu_id in AHU_IPS.keys():
+                my_sess = PLCWebClient(ahu_id=ahu_id)
                 my_sess.simple_txt()
         elif run_mode == "crash_hist_once_for_all":
-            for key in AHU_IPS["hosts"].keys():
-                my_sess = PLCWebClient(_id=key)
+            for ahu_id in AHU_IPS.keys():
+                my_sess = PLCWebClient(ahu_id=ahu_id)
                 my_sess.simple_text_hist()
         elif run_mode == "crash_hist_once" and args.get("ahu") is not None:
-            _id = AHU_IPS["translate"][args.get("ahu")]
-            my_sess = PLCWebClient(_id=_id)
+            ahu_id = args.get("ahu")
+            my_sess = PLCWebClient(ahu_id=ahu_id)
             history = my_sess.get_crash_hist()
             return history  # List of dicts FIXME: should not return
 

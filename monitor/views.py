@@ -29,8 +29,9 @@ def latest_view(request):
     ahu_ids = TempVolModel.AhuName.values
     # FIXME: don't make web requests in a view
     for ahu_id in ahu_ids:
+        # FIXME: get IP settings from config
         ahu_name = poll_web_server.AHU_IPS[ahu_id].name
-        my_sess = poll_web_server.PLCWebClient(name=ahu_name)
+        my_sess = poll_web_server.PLCWebClient(ahu_id=ahu_id)
         params = my_sess.main_menu_pretty()
         data[ahu_id] = {
             "temp_intake": params["temp_intake"],
@@ -39,7 +40,7 @@ def latest_view(request):
             "hum_exhaust": params["hum_exhaust"],
             "vol_intake": params["vol_intake"],
             "vol_exhaust": params["vol_exhaust"],
-            "AHU_name": ahu_id,
+            "AHU_name": ahu_name,
             "datetime": datetime.now(UTC3_TIME_ZONE)
         }
 
@@ -49,20 +50,21 @@ def latest_view(request):
 def crash_history_view(request):
     """Display all crash entries for a certain AHU."""
     if request.method == "GET":
-        ahu = request.GET.get("ahu")
-        if not ahu:
+        ahu_id = request.GET.get("ahu")
+        if not ahu_id:
             return HttpResponse("You need to add 'ahu' param")
-        if ahu not in "0123456789ABCDEF":
+        if ahu_id not in "0123456789ABCDEF":  # TODO if in AHU_IP.keys()
             return HttpResponse("You may need to pick correct id for ahu",
                                 content_type='text/plain; charset=utf8')
         # FIXME: main doesnt return anything
-        history = poll_web_server.main(run_mode="crash_hist_once", ahu=ahu)
+        history = poll_web_server.main(run_mode="crash_hist_once", ahu=ahu_id)
 
         return render(request,
                       "monitor/crash_history.html",
                       context={
                           "history": history,
-                          "ahu_name": poll_web_server.AHU_IPS["translate"][ahu]
+                          # FIXME: get IP settings from config
+                          "ahu_name": poll_web_server.AHU_IPS[ahu_id].name
                       }
                       )
     else:
